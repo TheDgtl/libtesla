@@ -3303,6 +3303,40 @@ namespace tsl {
         }
 
         /**
+         * @brief Replace the current Gui
+         * 
+         * @param gui Gui to replace the current Gui with
+         * @return Reference to the Gui
+         */
+        std::unique_ptr<tsl::Gui>& replaceWith(std::unique_ptr<tsl::Gui>&& gui) {
+            if (this->m_guiStack.top() != nullptr && this->m_guiStack.top()->m_focusedElement != nullptr)
+                this->m_guiStack.top()->m_focusedElement->resetClickAnimation();
+
+            gui->m_topElement = gui->createUI();
+
+            if (this->m_guiStack.top() != nullptr)
+                this->m_guiStack.pop();
+
+            this->m_guiStack.push(std::move(gui));
+
+            return this->m_guiStack.top();
+
+        }
+
+        /**
+         * @brief Creates a new Gui and replaces the current Gui with it
+         *
+         * @tparam G Gui to create
+         * @tparam Args Arguments to pass to the Gui
+         * @param args Arguments to pass to the Gui
+         * @return Reference to the newly created Gui
+         */
+        template<typename G, typename ...Args>
+        std::unique_ptr<tsl::Gui>& replaceWith(Args&&... args) {
+            return this->replaceWith(std::make_unique<G>(std::forward<Args>(args)...));
+        }
+
+        /**
          * @brief Pops the top Gui from the stack and goes back to the last one
          * @note The Overlay gets closes once there are no more Guis on the stack
          */
@@ -3321,6 +3355,9 @@ namespace tsl {
 
         template<typename G, typename ...Args>
         friend std::unique_ptr<tsl::Gui>& changeTo(Args&&... args);
+
+        template<typename G, typename ...Args>
+        friend std::unique_ptr<tsl::Gui>& replaceWith(Args&&... args);
 
         friend void goBack();
 
@@ -3505,6 +3542,19 @@ namespace tsl {
     template<typename G, typename ...Args>
     std::unique_ptr<tsl::Gui>& changeTo(Args&&... args) {
         return Overlay::get()->changeTo<G, Args...>(std::forward<Args>(args)...);
+    }
+
+    /**
+     * @brief Creates a new Gui and replaces the current Gui with it
+     * 
+     * @tparam G Gui to create
+     * @tparam Args Arguments to pass to the Gui
+     * @param args Arguments to pass to the Gui
+     * @return Reference to the newly created Gui
+     */
+    template<typename G, typename ...Args>
+    std::unique_ptr<tsl::Gui>& replaceWith(Args&&... args) {
+        return Overlay::get()->replaceWith<G, Args...>(std::forward<Args>(args)...);
     }
 
     /**
